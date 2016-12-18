@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import pickle
+save_file = 'model.ckpt'
 
 def one_hot(labels):
     n_values = np.max(labels) + 1
@@ -114,7 +115,7 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-num_epochs = 100
+num_epochs = 200
 logits = conv_net(x, weights, biases, keep_prob)
 
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
@@ -123,6 +124,7 @@ train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(logits,1), tf.argmax(y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+saver = tf.train.Saver()
 print("====== Starting Training")
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
@@ -138,9 +140,12 @@ with tf.Session() as sess:
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch_x, y: batch_y, keep_prob: 1})
             print("step %d, training accuracy %g "%(step, train_accuracy))
-            print("test accuracy %g"%accuracy.eval(feed_dict={
-                                 x: X_test, y: y_test, keep_prob: 1.0}))
-
+            test_acc = accuracy.eval(feed_dict={
+                                 x: X_test, y: y_test, keep_prob: 1.0})
+            print("test accuracy %g"%test_acc)
+            #if(test_acc > .95):
+            #  break;
+    saver.save(sess, save_file)
     print("test accuracy %g"%accuracy.eval(feed_dict={
         x: X_test, y: y_test, keep_prob: 1.0}))
 
