@@ -33,19 +33,19 @@ def max_pool_2x2(x):
                         strides=[1, 2, 2, 1], padding='SAME')
 
 def conv_net(x, weights, biases, keep_prob):
-    W_conv1 = weight_variable([5, 5, 1, 64])
+    W_conv1 = weight_variable([3, 3, 1, 64])
     b_conv1 = bias_variable([64])
 
     h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
 
-    W_conv2 = weight_variable([5, 5, 64, 128])
+    W_conv2 = weight_variable([3, 3, 64, 128])
     b_conv2 = bias_variable([128])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
-    W_conv3 = weight_variable([5, 5, 128, 256])
+    W_conv3 = weight_variable([3, 3, 128, 256])
     b_conv3 = bias_variable([256])
 
     h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
@@ -54,18 +54,24 @@ def conv_net(x, weights, biases, keep_prob):
     #W_fc1 = weight_variable([8 * 8 * 128, 1024])
     #b_fc1 = bias_variable([1024])
 
-    W_fc1 = weight_variable([4 * 4 * 256, 512])
-    b_fc1 = bias_variable([512])
+    W_fc1 = weight_variable([4 * 4 * 256, 1024])
+    b_fc1 = bias_variable([1024])
 
     h_pool3_flat = tf.reshape(h_pool3, [-1, 4 * 4 * 256])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
 
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-    W_fc2 = weight_variable([512, 43])
-    b_fc2 = bias_variable([43])
+    W_fc2 = weight_variable([1024, 512])
+    b_fc2 = bias_variable([512])
 
-    out = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+    fc2 = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+    h_fc2_drop = tf.nn.dropout(fc2, keep_prob)
+
+    W_fc3 = weight_variable([512, 43])
+    b_fc3 = bias_variable([43])
+
+    out = tf.matmul(h_fc2_drop, W_fc3) + b_fc3
     return out
 
 training_file = './train.p'
@@ -109,12 +115,12 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-
+num_epochs = 100
 logits = conv_net(x, weights, biases, keep_prob)
 
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
-#train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-train_step = tf.train.AdagradOptimizer(1e-2).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+#train_step = tf.train.AdagradOptimizer(1e-2).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(logits,1), tf.argmax(y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
@@ -122,16 +128,16 @@ print("====== Starting Training")
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
 
-    for t in range(20):
+    for t in range(num_epochs):
         for i in range(int(n_train/batch_size)):
           next_index = i * batch_size
           batch_x = X_train[next_index: next_index + batch_size]
           batch_y = y_train[next_index: next_index + batch_size]
           if i%100 == 0:
             train_accuracy = accuracy.eval(feed_dict={
-                x:batch_x, y: batch_y, keep_prob: 0.75})
+                x:batch_x, y: batch_y, keep_prob: 1})
             print("step %d, training accuracy %g"%(i, train_accuracy))
-          train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 1})
+          train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
 
     print("test accuracy %g"%accuracy.eval(feed_dict={
         x: X_test, y: y_test, keep_prob: 1.0}))
