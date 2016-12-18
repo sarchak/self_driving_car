@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 import pickle
 
@@ -33,19 +32,19 @@ def max_pool_2x2(x):
                         strides=[1, 2, 2, 1], padding='SAME')
 
 def conv_net(x, weights, biases, keep_prob):
-    W_conv1 = weight_variable([3, 3, 1, 64])
+    W_conv1 = weight_variable([5, 5, 1, 64])
     b_conv1 = bias_variable([64])
 
     h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
 
-    W_conv2 = weight_variable([3, 3, 64, 128])
+    W_conv2 = weight_variable([5, 5, 64, 128])
     b_conv2 = bias_variable([128])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
-    W_conv3 = weight_variable([3, 3, 128, 256])
+    W_conv3 = weight_variable([5, 5, 128, 256])
     b_conv3 = bias_variable([256])
 
     h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
@@ -107,7 +106,7 @@ image_shape = X_train[0].shape
 # TODO: How many unique classes/labels there are in the dataset.
 n_classes = y_train.shape[1]
 
-batch_size = 64
+batch_size =  64 
 
 x = tf.placeholder("float", [None, 32, 32, 1])
 y = tf.placeholder("float", [None, n_classes])
@@ -127,17 +126,20 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 print("====== Starting Training")
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
-
+    step = 0
     for t in range(num_epochs):
         for i in range(int(n_train/batch_size)):
           next_index = i * batch_size
           batch_x = X_train[next_index: next_index + batch_size]
           batch_y = y_train[next_index: next_index + batch_size]
-          if i%100 == 0:
+          train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
+          step += 1
+          if step%100 == 0:
             train_accuracy = accuracy.eval(feed_dict={
                 x:batch_x, y: batch_y, keep_prob: 1})
-            print("step %d, training accuracy %g"%(i, train_accuracy))
-          train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
+            print("step %d, training accuracy %g "%(step, train_accuracy))
+            print("test accuracy %g"%accuracy.eval(feed_dict={
+                                 x: X_test, y: y_test, keep_prob: 1.0}))
 
     print("test accuracy %g"%accuracy.eval(feed_dict={
         x: X_test, y: y_test, keep_prob: 1.0}))
