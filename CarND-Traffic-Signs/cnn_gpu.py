@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import pickle
+import cv2
+
 save_file = 'model.ckpt'
 
 def one_hot(labels):
@@ -25,6 +27,52 @@ def shuffle_data(X, y):
   y = y[train_idx]
   return (X, y)
 
+def transform_image(img,ang_range,shear_range,trans_range):
+    '''
+    This function transforms images to generate new images.
+    The function takes in following arguments,
+    1- Image
+    2- ang_range: Range of angles for rotation
+    3- shear_range: Range of values to apply affine transform to
+    4- trans_range: Range of values to apply translations over.
+
+    A Random uniform distribution is used to generate different parameters for transformation
+
+    '''
+    # Rotation
+
+    ang_rot = np.random.uniform(ang_range)-ang_range/2
+    rows,cols,ch = img.shape
+    Rot_M = cv2.getRotationMatrix2D((cols/2,rows/2),ang_rot,1)
+
+    # Translation
+    tr_x = trans_range*np.random.uniform()-trans_range/2
+    tr_y = trans_range*np.random.uniform()-trans_range/2
+    Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
+
+    # Shear
+    pts1 = np.float32([[5,5],[20,5],[5,20]])
+
+    pt1 = 5+shear_range*np.random.uniform()-shear_range/2
+    pt2 = 20+shear_range*np.random.uniform()-shear_range/2
+
+    pts2 = np.float32([[pt1,5],[pt2,pt1],[5,pt2]])
+
+    shear_M = cv2.getAffineTransform(pts1,pts2)
+
+    img = cv2.warpAffine(img,Rot_M,(cols,rows))
+    img = cv2.warpAffine(img,Trans_M,(cols,rows))
+    img = cv2.warpAffine(img,shear_M,(cols,rows))
+
+    # Denoise
+    img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
+    return img
+
+
+def accuracy_func(predictions, labels):
+    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
+            / predictions.shape[0])
+
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
@@ -32,21 +80,40 @@ def max_pool_2x2(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
                         strides=[1, 2, 2, 1], padding='SAME')
 
+def augmented_data(X, y):
+  X_train_augmented = np.array(X)
+  y_train_augmented = np.array(y)
+  idx = 0
+  print("************* Starting Augmenting data")
+  for (img, label) in zip(X_train, y_train):
+    idx += 1
+    tmp_X = np.array([img])
+    tmp_y = np.array([label])
+    for i in range(0,5):
+        img = transform_image(img, 20,10,5)
+        tmp_x = np.append(tmp_X, [img], axis=0)
+        tmp_y = np.append(tmp_y, [label], axis=0)
+    X_train_augmented = np.append(X_train_augmented, tmp_X, axis=0)
+    y_train_augmented = np.append(y_train_augmented, tmp_y, axis=0)
+    if (idx % 2000 == 0):
+        print("Finished : %d" % idx)
+  return(X_train_augmented, y_train_augmented)
+
 def conv_net(x, weights, biases, keep_prob):
-    W_conv1 = weight_variable([5, 5, 1, 32])
-    b_conv1 = bias_variable([32])
+    W_conv1 = weight_variable([5, 5, 1, 64])
+    b_conv1 = bias_variable([64])
 
     h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
 
-    W_conv2 = weight_variable([5, 5, 32, 64])
-    b_conv2 = bias_variable([64])
+    W_conv2 = weight_variable([5, 5, 64, 128])
+    b_conv2 = bias_variable([128])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
-    W_conv3 = weight_variable([5, 5, 64, 128])
-    b_conv3 = bias_variable([128])
+    W_conv3 = weight_variable([5, 5, 128, 256])
+    b_conv3 = bias_variable([256])
 
     h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
     h_pool3 = max_pool_2x2(h_conv3)
@@ -54,10 +121,10 @@ def conv_net(x, weights, biases, keep_prob):
     #W_fc1 = weight_variable([8 * 8 * 128, 1024])
     #b_fc1 = bias_variable([1024])
 
-    W_fc1 = weight_variable([4 * 4 * 128, 1024])
+    W_fc1 = weight_variable([4 * 4 * 256, 1024])
     b_fc1 = bias_variable([1024])
 
-    h_pool3_flat = tf.reshape(h_pool3, [-1, 4 * 4 * 128])
+    h_pool3_flat = tf.reshape(h_pool3, [-1, 4 * 4 * 256])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
 
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
@@ -84,10 +151,12 @@ with open(testing_file, mode='rb') as f:
 
 X_train, y_train = train['features'], train['labels']
 X_test, y_test = test['features'], test['labels']
-y_train = one_hot(y_train)
-y_test = one_hot(y_test)
+
+X_train, y_train = augmented_data(X_train, y_train)
 X_train = rgb2gray(X_train).reshape(-1, 32, 32, 1)
 X_test = rgb2gray(X_test).reshape(-1, 32, 32, 1)
+y_train = one_hot(y_train)
+y_test = one_hot(y_test)
 
 X_train, y_train = shuffle_data(X_train, y_train)
 X_test, y_test = shuffle_data(X_test, y_test)
@@ -107,7 +176,7 @@ image_shape = X_train[0].shape
 # TODO: How many unique classes/labels there are in the dataset.
 n_classes = y_train.shape[1]
 
-batch_size =  64
+batch_size = 128
 
 x = tf.placeholder("float", [None, 32, 32, 1])
 y = tf.placeholder("float", [None, n_classes])
@@ -115,37 +184,52 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-num_epochs = 200
+num_epochs = 100
 logits = conv_net(x, weights, biases, keep_prob)
 
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
+optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss)
+
 #train_step = tf.train.AdagradOptimizer(1e-2).minimize(cross_entropy)
+train_prediction = tf.nn.softmax(logits)
+
 correct_prediction = tf.equal(tf.argmax(logits,1), tf.argmax(y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+validation_size = int(0.05 * n_train)
+
+X_train = X_train[0:-validation_size]
+y_train = y_train[0:-validation_size]
+
+X_validation = X_train[-validation_size:]
+y_validation = y_train[-validation_size:]
+
+print("***************** Data shape ********************")
+print("X_train Size {}".format(X_train.shape))
+print("Y Size {}".format(y_train.shape))
+print("X_validation Size : {}".format(X_validation.shape))
+print("Y validation_size : {}".format(y_validation.shape))
 saver = tf.train.Saver()
-print("====== Starting Training")
+print("***************** Starting Training *************")
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
-    step = 0
     for t in range(num_epochs):
         for i in range(int(n_train/batch_size)):
           next_index = i * batch_size
           batch_x = X_train[next_index: next_index + batch_size]
           batch_y = y_train[next_index: next_index + batch_size]
-          train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
-          step += 1
-          if step%100 == 0:
-            train_accuracy = accuracy.eval(feed_dict={
-                x:batch_x, y: batch_y, keep_prob: 1})
-            print("step %d, training accuracy %g "%(step, train_accuracy))
-            test_acc = accuracy.eval(feed_dict={
-                                 x: X_test, y: y_test, keep_prob: 1.0})
-            print("test accuracy %g"%test_acc)
-            #if(test_acc > .95):
-            #  break;
-    saver.save(sess, save_file)
+          _, l, predictions = sess.run([optimizer, loss, train_prediction], feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
+          if (i % 100 == 0):
+            test_accuracy = accuracy.eval(feed_dict={
+                          x: X_test, y: y_test, keep_prob: 1.0})
+            print('Minibatch loss at step %d: %f, Minibatch accuracy: %.1f' % (i, l, accuracy_func(predictions, batch_y)))
+            print('Validation accuracy: %.1f' % test_accuracy)
+          # if i%100 == 0:
+          #   train_accuracy = accuracy.eval(feed_dict={
+          #       x:batch_x, y: batch_y, keep_prob: 1})
+          #   print("step %d, training accuracy %g"%(i, train_accuracy))
+          # train_step.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
+    print("***************** Test Accuracy *************")
     print("test accuracy %g"%accuracy.eval(feed_dict={
         x: X_test, y: y_test, keep_prob: 1.0}))
-
+    saver.save(sess, save_file)
