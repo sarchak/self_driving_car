@@ -187,7 +187,7 @@ image_shape = X_train[0].shape
 # TODO: How many unique classes/labels there are in the dataset.
 n_classes = y_train.shape[1]
 
-batch_size = 64
+batch_size = 32
 
 x = tf.placeholder("float", [None, 32, 32, 1])
 y = tf.placeholder("float", [None, n_classes])
@@ -195,14 +195,13 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-num_epochs = 100
+num_epochs = 150
 logits = conv_net(x, weights, biases, keep_prob)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
 optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
-#train_step = tf.train.AdagradOptimizer(1e-2).minimize(cross_entropy)
-train_prediction = tf.nn.softmax(logits)
+#optimizer = tf.train.AdagradOptimizer(1e-2).minimize(loss)
 
 correct_prediction = tf.equal(tf.argmax(logits,1), tf.argmax(y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -229,19 +228,13 @@ with tf.Session() as sess:
           next_index = i * batch_size
           batch_x = X_train[next_index: next_index + batch_size]
           batch_y = y_train[next_index: next_index + batch_size]
-          # _, l, predictions = sess.run([optimizer, loss, train_prediction], feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
-          # if (i % 100 == 0):
-          #   test_accuracy = accuracy.eval(feed_dict={
-          #                 x: X_test, y: y_test, keep_prob: 1.0})
-          #   print('Minibatch loss at step %d: %f, Minibatch accuracy: %.1f' % (i, l, accuracy_func(predictions, batch_y)))
-          #   print('Validation accuracy: %.1f' % test_accuracy)
           if i%100 == 0:
             valid_accuracy = accuracy.eval(feed_dict={
                 x:X_validation, y: y_validation, keep_prob: 1})
             print("step %d, validation accuracy %g"%(i, valid_accuracy))
             print("test accuracy %g"%accuracy.eval(feed_dict={
               x: X_test, y: y_test, keep_prob: 1.0}))
-          optimizer.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.75})
+          optimizer.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
     print("***************** Test Accuracy *************")
     print("test accuracy %g"%accuracy.eval(feed_dict={
         x: X_test, y: y_test, keep_prob: 1.0}))
