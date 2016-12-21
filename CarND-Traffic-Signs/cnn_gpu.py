@@ -85,7 +85,7 @@ def max_pool_2x2(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
                         strides=[1, 2, 2, 1], padding='SAME')
 
-def augmented_data(X, y, samples=2):
+def augmented_data(X, y, samples=1):
   x_shape = X.shape
   y_shape = y.shape
   X_train_augmented = []
@@ -94,8 +94,8 @@ def augmented_data(X, y, samples=2):
   print("************* Starting Augmenting data")
   for (img, label) in zip(X_train, y_train):
     idx += 1
-    tmp_x = []
-    tmp_y = []
+    tmp_x = [img]
+    tmp_y = [label]
     for i in range(0,samples):
         img = transform_image(img, 20,10,5)
         tmp_x.append(img)
@@ -103,8 +103,8 @@ def augmented_data(X, y, samples=2):
     X_train_augmented.append(tmp_x)
     y_train_augmented.append(tmp_y)
 
-  X_train_augmented = np.array(X_train_augmented,dtype = np.float32()).reshape([len(X_train)*samples, 32, 32, 3])
-  y_train_augmented = np.array(y_train_augmented,dtype = np.int32()).reshape(len(y_train)*samples,)
+  X_train_augmented = np.array(X_train_augmented,dtype = np.float32()).reshape([len(X_train)*(samples+1), 32, 32, 3])
+  y_train_augmented = np.array(y_train_augmented,dtype = np.int32()).reshape(len(y_train)*(samples+1),)
   return(X_train_augmented, y_train_augmented)
 
 weight_layers = {'layer1': 64, 'layer2':128, 'layer3': 256}
