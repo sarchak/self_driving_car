@@ -232,8 +232,8 @@ with tf.Session() as sess:
             valid_accuracy = accuracy.eval(feed_dict={
                 x:X_validation, y: y_validation, keep_prob: 1})
             print("step %d, validation accuracy %g"%(i, valid_accuracy))
-            print("test accuracy %g"%accuracy.eval(feed_dict={
-              x: X_test, y: y_test, keep_prob: 1.0}))
+            # print("test accuracy %g"%accuracy.eval(feed_dict={
+            #   x: X_test, y: y_test, keep_prob: 1.0}))
           optimizer.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
     print("***************** Test Accuracy *************")
     print("test accuracy %g"%accuracy.eval(feed_dict={
