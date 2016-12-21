@@ -132,21 +132,21 @@ def conv_net(x, weights, biases, keep_prob):
     #W_fc1 = weight_variable([8 * 8 * 128, 1024])
     #b_fc1 = bias_variable([1024])
 
-    W_fc1 = weight_variable([4 * 4 * weight_layers['layer3'], 1024])
-    b_fc1 = bias_variable([1024])
+    W_fc1 = weight_variable([4 * 4 * weight_layers['layer3'], 128])
+    b_fc1 = bias_variable([128])
 
     h_pool3_flat = tf.reshape(h_pool3, [-1, 4 * 4 * weight_layers['layer3']])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
 
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-    W_fc2 = weight_variable([1024, 512])
-    b_fc2 = bias_variable([512])
+    W_fc2 = weight_variable([128, 64])
+    b_fc2 = bias_variable([64])
 
     fc2 = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
     h_fc2_drop = tf.nn.dropout(fc2, keep_prob)
 
-    W_fc3 = weight_variable([512, 43])
+    W_fc3 = weight_variable([64, 43])
     b_fc3 = bias_variable([43])
 
     out = tf.matmul(h_fc2_drop, W_fc3) + b_fc3
