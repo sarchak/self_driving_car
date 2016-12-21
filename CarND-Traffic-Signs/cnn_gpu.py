@@ -107,8 +107,8 @@ def augmented_data(X, y, samples=1):
   y_train_augmented = np.array(y_train_augmented,dtype = np.int32()).reshape(len(y_train)*(samples+1),)
   return(X_train_augmented, y_train_augmented)
 
-weight_layers = {'layer1': 64, 'layer2':128, 'layer3': 256}
-biases_layers = {'layer1': 64, 'layer2':128, 'layer3': 256}
+weight_layers = {'layer1': 8, 'layer2':16, 'layer3': 64}
+biases_layers = {'layer1': 8, 'layer2':16, 'layer3': 64}
 
 def conv_net(x, weights, biases, keep_prob):
     W_conv1 = weight_variable([5, 5, 1, weight_layers['layer1']])
@@ -162,7 +162,7 @@ with open(testing_file, mode='rb') as f:
 
 X_train, y_train = train['features'], train['labels']
 X_test, y_test = test['features'], test['labels']
-X_train, y_train = augmented_data(X_train, y_train)
+#X_train, y_train = augmented_data(X_train, y_train)
 X_train = rgb2gray(X_train).reshape(-1, 32, 32, 1)
 X_test = rgb2gray(X_test).reshape(-1, 32, 32, 1)
 
@@ -187,7 +187,7 @@ image_shape = X_train[0].shape
 # TODO: How many unique classes/labels there are in the dataset.
 n_classes = y_train.shape[1]
 
-batch_size = 32
+batch_size = 256
 
 x = tf.placeholder("float", [None, 32, 32, 1])
 y = tf.placeholder("float", [None, n_classes])
@@ -195,7 +195,7 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-num_epochs = 150
+num_epochs = 50
 logits = conv_net(x, weights, biases, keep_prob)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
