@@ -195,7 +195,7 @@ keep_prob = tf.placeholder(tf.float32)
 
 weights = {}
 biases = {}
-num_epochs = 50
+num_epochs = 1
 logits = conv_net(x, weights, biases, keep_prob)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y))
@@ -229,13 +229,29 @@ with tf.Session() as sess:
           batch_x = X_train[next_index: next_index + batch_size]
           batch_y = y_train[next_index: next_index + batch_size]
           if i%100 == 0:
-            valid_accuracy = accuracy.eval(feed_dict={
-                x:X_validation, y: y_validation, keep_prob: 1})
-            print("step %d, validation accuracy %g"%(i, valid_accuracy))
+            vaccuracy = []
+            for vidx in range(0, int(X_validation.shape[0]/batch_size)):
+              vpos = vidx * batch_size
+              vbatch_x = X_validation[vpos: vpos+batch_size]
+              vbatch_y = y_validation[vpos: vpos+batch_size]
+              valid_accuracy = accuracy.eval(feed_dict={
+                  x:vbatch_x, y: vbatch_y, keep_prob: 1})
+              vaccuracy.append(valid_accuracy)
+            print("step %d, validation accuracy %g"%(i, sum(vaccuracy)*1.0/len(vaccuracy)))
             # print("test accuracy %g"%accuracy.eval(feed_dict={
             #   x: X_test, y: y_test, keep_prob: 1.0}))
           optimizer.run(feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
-    print("***************** Test Accuracy *************")
-    print("test accuracy %g"%accuracy.eval(feed_dict={
-        x: X_test, y: y_test, keep_prob: 1.0}))
+    print("\n***************** Test Accuracy *************\n")
+    #print("test accuracy %g"%accuracy.eval(feed_dict={
+    #    x: X_test, y: y_test, keep_prob: 1.0}))
+
+    for vidx in range(0, int(X_test.shape[0]/batch_size)):
+      vpos = vidx * batch_size
+      vbatch_x = X_test[vpos: vpos+batch_size]
+      vbatch_y = y_test[vpos: vpos+batch_size]
+      valid_accuracy = accuracy.eval(feed_dict={
+          x:vbatch_x, y: vbatch_y, keep_prob: 1})
+      vaccuracy.append(valid_accuracy)
+    print("Test Accuracy %g"%(sum(vaccuracy)*1.0/len(vaccuracy)))
+
     saver.save(sess, save_file)
