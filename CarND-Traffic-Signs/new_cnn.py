@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import cv2
 from datetime import datetime
-EPOCHS = 40
+EPOCHS = 100 
 BATCH_SIZE = 64 
 from tensorflow.contrib.layers import flatten
 
@@ -91,7 +91,7 @@ X_train, y_train = train['features'], train['labels']
 X_test, y_test = test['features'], test['labels']
 X_train, y_train = shuffle(X_train, y_train)
 
-#X_train, y_train = augmented_data(X_train, y_train)
+X_train, y_train = augmented_data(X_train, y_train)
 
 X_train = rgb2gray(X_train).reshape(-1, 32, 32, 1)
 X_test = rgb2gray(X_test).reshape(-1, 32, 32, 1)
@@ -109,7 +109,7 @@ print(y_train.shape)
 # TODO: How many unique classes/labels there are in the dataset.
 n_classes = y_train.shape[0]
 
-validation_size = int(0.01 * n_train)
+validation_size = int(0.05 * n_train)
 
 X_train = X_train[0:-validation_size]
 y_train = y_train[0:-validation_size]
