@@ -148,19 +148,19 @@ weight_layers = {'layer1': 64, 'layer2':128, 'layer3': 256}
 biases_layers = {'layer1': 64, 'layer2':128, 'layer3': 256}
 
 def conv_net(x, keep_prob):
-    W_conv1 = weight_variable([5, 5, 1, weight_layers['layer1']])
+    W_conv1 = weight_variable([3, 3, 1, weight_layers['layer1']])
     b_conv1 = bias_variable([biases_layers['layer1']])
 
     h_conv1 = tf.nn.relu(conv2d(x, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
 
-    W_conv2 = weight_variable([5, 5, weight_layers['layer1'], weight_layers['layer2']])
+    W_conv2 = weight_variable([3, 3, weight_layers['layer1'], weight_layers['layer2']])
     b_conv2 = bias_variable([biases_layers['layer2']])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
-    W_conv3 = weight_variable([5, 5, weight_layers['layer2'], weight_layers['layer3']])
+    W_conv3 = weight_variable([3, 3, weight_layers['layer2'], weight_layers['layer3']])
     b_conv3 = bias_variable([biases_layers['layer3']])
 
     h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
@@ -238,7 +238,7 @@ with tf.Session() as sess:
         saver
     except NameError:
         saver = tf.train.Saver()
-    saver.save(sess, 'cnn_model')
+    saver.save(sess, 'cnn_model_v1')
     print("Model saved")
     test_accuracy = evaluate(X_test, y_test)
     print("Test Accuracy = {:.3f}".format(test_accuracy))
