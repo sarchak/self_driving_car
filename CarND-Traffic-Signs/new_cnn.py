@@ -4,28 +4,14 @@ import numpy as np
 import pickle
 import cv2
 from datetime import datetime
-EPOCHS = 100 
-BATCH_SIZE = 64 
+EPOCHS = 100
+BATCH_SIZE = 64
 from tensorflow.contrib.layers import flatten
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
 def transform_image(img,ang_range,shear_range,trans_range):
-    '''
-    This function transforms images to generate new images.
-    The function takes in following arguments,
-    1- Image
-    2- ang_range: Range of angles for rotation
-    3- shear_range: Range of values to apply affine transform to
-    4- trans_range: Range of values to apply translations over.
-
-    A Random uniform distribution is used to generate different parameters for transformation
-
-    '''
-    # Rotation
-    t1 = datetime.now()
-
     ang_rot = np.random.uniform(ang_range)-ang_range/2
     rows,cols,ch = img.shape
     Rot_M = cv2.getRotationMatrix2D((cols/2,rows/2),ang_rot,1)
@@ -50,10 +36,7 @@ def transform_image(img,ang_range,shear_range,trans_range):
     img = cv2.warpAffine(img,shear_M,(cols,rows))
 
     # Denoise
-    #img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
-    t2 = datetime.now()
-
-
+    img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
     return img
 
 def augmented_data(X, y, samples=2):
@@ -62,7 +45,7 @@ def augmented_data(X, y, samples=2):
   X_train_augmented = []
   y_train_augmented = []
   idx = 0
-  print("************* Starting Augmenting data")
+  print("************* Starting Augmenting data *****************")
   for (img, label) in zip(X_train, y_train):
     idx += 1
     tmp_x = [img]
@@ -218,7 +201,7 @@ def evaluate(X_data, y_data):
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     num_examples = len(X_train)
-    
+
     print("Training...")
     print()
     for i in range(EPOCHS):
@@ -228,12 +211,12 @@ with tf.Session() as sess:
             batch_x, batch_y = X_train[offset:end], y_train[offset:end]
             sess.run(training_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
 
-            
+
         validation_accuracy = evaluate(X_validation, y_validation)
         print("EPOCH {} ...".format(i+1))
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
-        
+
     try:
         saver
     except NameError:
