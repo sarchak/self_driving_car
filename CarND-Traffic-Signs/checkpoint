@@ -1,2 +1,3 @@
-model_checkpoint_path: "latest_model_working_v2"
+model_checkpoint_path: "review_v2"
 all_model_checkpoint_paths: "latest_model_working_v2"
+all_model_checkpoint_paths: "review_v2"
