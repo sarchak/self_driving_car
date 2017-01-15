@@ -3,7 +3,7 @@ import tensorflow as tf
 import json
 import numpy as np
 from keras.layers import Dense, Dropout, Activation, Flatten,ELU
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Convolution2D, MaxPooling2D, AveragePooling2D
 from keras.optimizers import SGD
 from keras.layers import Input, Flatten, Dense
 from keras.models import Model, Sequential
@@ -35,7 +35,6 @@ def preprocess(image):
   width = image.shape[1]
   cropped = image[50:140,:,:]
   resized = cv2.resize(cropped, (int(width/10), int((height-40)/10)))
-  #resized = cv2.resize(cropped, (32,16))
   resized = cv2.cvtColor(resized, cv2.COLOR_RGB2HSV)
   # resized = tf.image.resize_images(cropped, (int(width/2), int((height-40)/2)))
   if live:
@@ -92,18 +91,17 @@ def load_data(image_dir, log):
       y.append(fdata[1])
       count += 1
 
-    # count = 0
-    # img_names = df[['right']]
-    # for row in img_names.itertuples():
-    #   filename = image_dir+"/"+str.strip(row[1])
-    #   img_data = preprocess(plt.imread(filename))
-    #   x.append(img_data)
-    #   y.append(y_true.iloc[count] - 0.3)
-    #   fdata = flipped(img_data, y_true.iloc[count] - 0.3)
-    #   x.append(fdata[0])
-    #   y.append(fdata[1])
-
-    #   count += 1
+    count = 0
+    img_names = df[['right']]
+    for row in img_names.itertuples():
+      filename = image_dir+"/"+str.strip(row[1])
+      img_data = preprocess(plt.imread(filename))
+      x.append(img_data)
+      y.append(y_true.iloc[count] - 0.3)
+      fdata = flipped(img_data, y_true.iloc[count] - 0.3)
+      x.append(fdata[0])
+      y.append(fdata[1])
+      count += 1
 
     return np.array(x), np.array(y)
 
