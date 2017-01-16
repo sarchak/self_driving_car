@@ -1,5 +1,5 @@
+*.npy
 weights.hdf5
 data
 data.orig
-model.h5
 __pycache__/model.cpython-35.pyc

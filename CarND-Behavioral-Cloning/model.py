@@ -12,7 +12,7 @@ import pandas as pd
 from keras.callbacks import ModelCheckpoint
 import cv2
 from PIL import Image
-import sys
+import os
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -23,6 +23,7 @@ flags.DEFINE_string('image_dir', '', "Image directory path")
 flags.DEFINE_string('log', '', "Driving Log")
 flags.DEFINE_integer('epochs', 50, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 256, "The batch size.")
+
 
 def preprocess(image):
   img_shape = image.shape
@@ -68,6 +69,7 @@ def load_data(image_dir, log):
     x = []
     y = []
     count = 0
+    ANGLE_CORRECTION = 0.30
     for row in img_names.itertuples():
         filename = image_dir+"/"+row[1]
         img_data = preprocess(plt.imread(filename))
@@ -85,11 +87,13 @@ def load_data(image_dir, log):
       filename = image_dir+"/"+str.strip(row[1])
       img_data = preprocess(plt.imread(filename))
       x.append(img_data)
-      y.append(y_true.iloc[count] + 0.3)
-      fdata = flipped(img_data, y_true.iloc[count] + 0.3)
+      y.append(y_true.iloc[count] + ANGLE_CORRECTION)
+      fdata = flipped(img_data, y_true.iloc[count] + ANGLE_CORRECTION)
       x.append(fdata[0])
       y.append(fdata[1])
       count += 1
+      # if count > 10:
+      #     break
 
     count = 0
     img_names = df[['right']]
@@ -97,11 +101,13 @@ def load_data(image_dir, log):
       filename = image_dir+"/"+str.strip(row[1])
       img_data = preprocess(plt.imread(filename))
       x.append(img_data)
-      y.append(y_true.iloc[count] - 0.3)
-      fdata = flipped(img_data, y_true.iloc[count] - 0.3)
+      y.append(y_true.iloc[count] - ANGLE_CORRECTION)
+      fdata = flipped(img_data, y_true.iloc[count] - ANGLE_CORRECTION)
       x.append(fdata[0])
       y.append(fdata[1])
       count += 1
+      # if count > 10:
+      #     break
 
     return np.array(x), np.array(y)
 
@@ -124,12 +130,23 @@ def main(_):
   print("Epochs :", FLAGS.epochs)
   print("Batch Size :", FLAGS.batch_size)
   df = pd.read_csv(FLAGS.log)
-  #tmp = train_generator(df[['center', 'steering']], FLAGS.image_dir, 4)
-  X_train, Y_train = load_data(FLAGS.image_dir, FLAGS.log)
+
+  if os.path.isfile('x_preprocessed.data.npy') and os.path.isfile('y_preprocessed.data.npy') :
+    print("****** Preprocessed file already exists. Loading X_train and y_train ******")
+    X_train = np.load("x_preprocessed.data.npy")
+    Y_train = np.load("y_preprocessed.data.npy")
+  else:
+    print("****** Preprocessed data doesn't exist!!!. Starting preprocessing ******")
+    X_train, Y_train = load_data(FLAGS.image_dir, FLAGS.log)
+    print("****** Saving preprocessed data ******")
+    np.save("x_preprocessed.data", X_train)
+    np.save("y_preprocessed.data", Y_train)
+
   print(X_train.shape)
   print(Y_train.shape)
   input_shape = X_train.shape[1:4]
 
+  np.random.seed(0)
   model = train_model(input_shape)
   checkpointer = ModelCheckpoint(filepath="weights.hdf5", verbose=1, save_best_only=True)
   model.fit(X_train, Y_train, validation_split=0.1, shuffle=True, nb_epoch=FLAGS.epochs, callbacks=[checkpointer])
