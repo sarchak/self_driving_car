@@ -73,10 +73,17 @@ Simple Network - v2
 
 ### Model Architecture: 
 
-Used Adam optimizer default
+Used Adam optimizer default configuration.
 Batch Size: 128
 Image shape : (12, 32, 3)
 Train on 43394 samples, validate on 4822 samples
+
+It's interesting to see how we can reduce the size of the image from (160,320,3) to (12, 32, 3) and still preserve all the necessary information to build 
+a working network.
+
+Add MaxPooling to reduce the dimension and Dropout to prevent overfitting.
+
+EDA notebook has some more exploration on the steering angle and the results of the preprocessed images.
  
 ```
 Layer (type)                     Output Shape          Param #     Connected to
